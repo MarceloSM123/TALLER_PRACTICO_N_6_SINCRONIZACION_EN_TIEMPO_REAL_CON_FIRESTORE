@@ -1,5 +1,5 @@
 import { db } from '../fireBase'
-import { collection, addDoc, getDocs, updateDoc,doc, deleteDoc} from 'firebase/firestore'
+import { collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot } from 'firebase/firestore'
 
 export interface Producto {
   nombre: string
@@ -18,22 +18,34 @@ export async function crearProducto(
   stock: number,
   categoria: string
 ): Promise<string> {
-  const producto: Producto = { nombre, precio, stock,categoria }
+  const producto: Producto = { nombre, precio, stock, categoria }
   const docRef = await addDoc(collection(db, 'productos'), producto)
   return docRef.id
 }
 
-//----------Taller 2
+//----------Taller 2 (AHORA EN TIEMPO REAL)
+export const suscribirProductos = (
+  callback: (productos: ProductoConId[]) => void,
+  onError?: (error: Error) => void
+): (() => void) => {
+  const productosRef = collection(db, 'productos')
+  const unsubscribe = onSnapshot(
+    productosRef,
+    (querySnapshot) => {
+      const productos = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as ProductoConId[]
+      callback(productos)
+    },
+    (error) => {
+      if (onError) onError(error)
+      else console.error('Error en la suscripción de productos: ', error)
+    }
+  )
+  return unsubscribe
+}
 
-export const obtenerProductos = async (): Promise<ProductoConId[]> => {
-  const querySnapshot = await getDocs(collection(db, 'productos'))
-  const productos=querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as ProductoConId[]
-  return productos
-  }
-    
 //---Actualizar producto
 export const actualizarProducto = async (
     id: string,
@@ -41,9 +53,8 @@ export const actualizarProducto = async (
     precio: number,
     stock: number,
     categoria: string
-
 )=>{
-const productoRef =doc(db, 'productos', id)
+const productoRef = doc(db, 'productos', id)
 await updateDoc(productoRef, {
     nombre,
     precio,
@@ -57,4 +68,3 @@ export const eliminarProducto = async (id: string) => {
   const productoRef = doc(db, 'productos', id)
   await deleteDoc(productoRef)
 }
-

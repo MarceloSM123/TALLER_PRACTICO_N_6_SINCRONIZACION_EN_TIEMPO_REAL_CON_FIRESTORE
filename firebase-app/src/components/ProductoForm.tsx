@@ -32,6 +32,7 @@ export default function ProductoForm({ productoEditar,onEditarChange }: Producto
                 categoria.trim()
               )
             console.log('Documento actualizado con ID: ', productoEditar.id)
+            onEditarChange(null)
         }else{
     try {
       const id = await crearProducto(
@@ -48,7 +49,7 @@ export default function ProductoForm({ productoEditar,onEditarChange }: Producto
       setCategoria('')
     } catch (error) {
       console.error('Error añadiendo documento: ', error)
-       onEditarChange(null)
+      
     } finally {
       setGuardando(false)
     }}
