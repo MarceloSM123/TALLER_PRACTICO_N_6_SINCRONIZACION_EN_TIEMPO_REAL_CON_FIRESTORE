@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {obtenerProductos,eliminarProducto, type ProductoConId} from "../services/productoService";
+import {suscribirProductos, eliminarProducto, type ProductoConId} from "../services/productoService";
 
 interface ProductoListaProps {
     onEditar: (producto: ProductoConId) => void;
@@ -7,25 +7,22 @@ interface ProductoListaProps {
 
 export const ProductoLista = ({ onEditar }: ProductoListaProps) => {
     const [productos, setProductos] = useState<ProductoConId[]>([]);
-    useEffect(() => {
-        const cargarProductos = async () => {
-            try{
-                const datos=await obtenerProductos();
-                setProductos(datos);
-            }catch(error){
-                console.error("Error al obtener productos: ",error);
 
-            }
-        }
-        cargarProductos();
+    useEffect(() => {
+        const unsubscribe = suscribirProductos(
+            (datos) => setProductos(datos),
+            (error) => console.error("Error al obtener productos: ", error)
+        );
+
+        // cleanup: cierra el listener al desmontar el componente
+        return () => unsubscribe();
     }, []);
 
 const hansleEliminarProducto = async (id: string) => {
     try {
         await eliminarProducto(id);
         console.log(`Producto con ID ${id} eliminado correctamente.`);
-        const productosActualizados = productos.filter((producto) => producto.id !== id);
-        setProductos(productosActualizados);
+        // Ya NO se filtra manualmente: onSnapshot actualiza la lista solo
     } catch (error) {
         console.error("Error al eliminar producto: ", error);
     }
@@ -36,7 +33,7 @@ const hansleEliminarProducto = async (id: string) => {
             <h2>Lista de productos</h2>
             {
                 productos.map((producto) => (
-                    <div>
+                    <div key={producto.id}>
                         <h3>Producto ID: {producto.id}</h3>
                         <p>Nombre: {producto.nombre}</p>
                         <p>Precio: ${producto.precio.toFixed(2)}</p>
@@ -49,5 +46,4 @@ const hansleEliminarProducto = async (id: string) => {
             }
         </div>
     )
-    
 }
